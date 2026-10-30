@@ -1631,6 +1631,26 @@ export type RecentConversationListItem = Pick<
   'sessionId' | 'provider' | 'projectId' | 'projectDisplayName' | 'sessionTitle' | 'lastActivity'
 >;
 
+// ---------------------------
+//----------------- CENTRAL COMMAND LIVE SESSIONS ------------
+
+/** A real local session displayed by Central Command. Activity comes from the server's running-session report, never inferred from transcript recency. */
+export type LiveCommandSession = {
+  id: string;
+  title: string;
+  provider: LLMProvider;
+  projectPath: string;
+  projectName: string;
+  updatedAt: string | null;
+  status: 'running' | 'idle' | 'attention';
+  snippet: string;
+  /** The listing endpoint does not expose approvals; null means unknown, not zero. */
+  pendingApprovals: number | null;
+};
+
+// ---------------------------
+//----------------- SIDEBAR EDITING ------------
+
 /**
  * The rename the sidebar currently has open, if any.
  *

@@ -1,8 +1,8 @@
 {
   "name": "@cloudcli-ai/cloudcli",
   "version": "1.37.6",
-  "productName": "CloudCLI",
-  "description": "A web-based UI for Claude Code CLI",
+  "productName": "Central Command",
+  "description": "Central Command agent workspace. Modified fork of CloudCLI UI.",
   "type": "module",
   "main": "dist-server/server/index.js",
   "bin": {
@@ -59,7 +59,10 @@
     "prepublishOnly": "npm run build",
     "postinstall": "node scripts/fix-node-pty.js",
     "prepare": "husky",
-    "update:platform": "./update-platform.sh"
+    "update:platform": "./update-platform.sh",
+    "command:dev": "node scripts/central-command-start.mjs --dev",
+    "command:start": "node scripts/central-command-start.mjs",
+    "command:setup": "node scripts/central-command-setup.mjs"
   },
   "build": {
     "appId": "ai.cloudcli.desktop",
@@ -170,7 +173,7 @@
     "cmdk": "^1.1.1",
     "cors": "^2.8.5",
     "cross-spawn": "^7.0.3",
-    "dompurify": "^3.4.7",
+    "dompurify": "^3.4.17",
     "express": "^4.18.2",
     "fuse.js": "^7.0.0",
     "gray-matter": "^4.0.3",

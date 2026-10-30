@@ -11,3 +11,8 @@ Contributions by Siteboon AI B.V. prior to commit 004135ef were originally
 published under GPL-3.0 and are hereby relicensed to AGPL-3.0-or-later.
 Contributions by other authors prior to that commit remain under GPL-3.0
 and are incorporated into this work as permitted by GPL-3.0 Section 13.
+
+Modified fork: Central Command, October 29, 2026.
+Source: https://github.com/TommyAllsup/central-command-gui
+The Central Command interface and local launch workflow are modifications.
+This fork is not endorsed by Siteboon AI B.V.

@@ -1,4 +1,4 @@
-import { FolderPlus, Plus, RefreshCw, Search, X, PanelLeftClose } from 'lucide-react';
+import { ArrowLeft, FolderPlus, Plus, RefreshCw, Search, X, PanelLeftClose } from 'lucide-react';
 import type { TFunction } from 'i18next';
 
 import { Button, Input } from '@/shared/ui';
@@ -81,6 +81,10 @@ export default function SidebarHeader({
 
   return (
     <div className="flex-shrink-0">
+      <a href="/command" className="flex min-h-9 items-center gap-2 border-b border-border px-3 text-sm text-muted-foreground hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px]">
+        <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
+        Command deck
+      </a>
       {/* Desktop header */}
       <div
         className="hidden px-3 pb-2 pt-3 md:block"

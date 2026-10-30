@@ -9,6 +9,7 @@ import { WebSocketProvider } from '@/shared/context/WebSocketContext';
 import { PluginsProvider } from '@/modules/plugins';
 import { ProjectWorkspaceRoute } from '@/modules/project-workspace';
 import { i18n } from '@/modules/i18n';
+import { CentralCommand } from '@/modules/central-command';
 
 const DEPLOYMENT_ASSET_DIRECTORIES = new Set(['assets', 'static', 'icons', 'images']);
 
@@ -109,6 +110,12 @@ function detectRouterBasename() {
 export default function App() {
   const routerBasename = detectRouterBasename();
 
+  // The sample workspace has no access to provider APIs or authentication state.
+  // Real sessions retain the upstream auth gate and workspace providers below.
+  if (window.location.pathname === '/' || window.location.pathname === '/demo') {
+    return <CentralCommand />;
+  }
+
   return (
     <I18nextProvider i18n={i18n}>
       <ThemeProvider>
@@ -121,8 +128,10 @@ export default function App() {
                 <ProtectedRoute>
                   <Router basename={routerBasename}>
                     <Routes>
-                      <Route path="/" element={<ProjectWorkspaceRoute />} />
+                      <Route path="/command" element={<CentralCommand live />} />
+                      <Route path="/workspace" element={<ProjectWorkspaceRoute />} />
                       <Route path="/session/:sessionId" element={<ProjectWorkspaceRoute />} />
+                      <Route path="*" element={<CentralCommand live />} />
                     </Routes>
                   </Router>
                 </ProtectedRoute>

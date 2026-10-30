@@ -37,6 +37,15 @@ export default defineConfig(({ mode }) => {
     server: {
       host,
       port: parseInt(env.VITE_PORT) || 5173,
+      // Windows cannot atomically promote the backend build while Vite holds
+      // directory watchers on its generated staging or previous-build folders.
+      watch: {
+        ignored: [
+          '**/dist-server', '**/dist-server/**',
+          '**/dist-server.next', '**/dist-server.next/**',
+          '**/dist-server.old', '**/dist-server.old/**',
+        ],
+      },
       proxy: {
         '/api': `http://${proxyHost}:${serverPort}`,
         '/ws': {

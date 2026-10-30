@@ -1025,7 +1025,7 @@ export function useProjectsState({
     (project: Project) => {
       setSelectedProject(project);
       setSelectedSession(null);
-      navigate('/');
+      navigate('/workspace');
 
       if (isMobile) {
         setSidebarOpen(false);
@@ -1067,7 +1067,7 @@ export function useProjectsState({
       setSelectedSession(null);
       setActiveTab('chat');
       setNewSessionTrigger((previous) => previous + 1);
-      navigate('/');
+      navigate('/workspace');
 
       if (isMobile) {
         setSidebarOpen(false);
@@ -1082,7 +1082,7 @@ export function useProjectsState({
 
       if (selectedSession?.id === sessionIdToDelete) {
         setSelectedSession(null);
-        navigate('/');
+        navigate('/workspace');
       }
 
       setProjects((prevProjects) =>
@@ -1242,7 +1242,7 @@ export function useProjectsState({
       if (selectedProject?.projectId === projectId) {
         setSelectedProject(null);
         setSelectedSession(null);
-        navigate('/');
+        navigate('/workspace');
       }
 
       setProjects((prevProjects) => prevProjects.filter((project) => project.projectId !== projectId));

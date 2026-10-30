@@ -45,7 +45,7 @@ export default function ProjectEffects({
         return;
       }
 
-      navigate('/');
+      navigate('/workspace');
     };
 
     navigator.serviceWorker.addEventListener('message', handleServiceWorkerMessage);
