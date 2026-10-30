@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Activity,
   ArrowDownLeft,
@@ -29,6 +29,7 @@ import {
 
 import { useDemoCommand } from "@/modules/central-command/hooks/useDemoCommand";
 import { useLiveCommand } from "@/modules/central-command/hooks/useLiveCommand";
+import { DemoTour } from "@/modules/central-command/modals/DemoTour";
 import "@/modules/central-command/central-command.css";
 
 type Screen = "overview" | "inbox" | "activity" | "connections";
@@ -144,6 +145,40 @@ export function CentralCommand({ live = false }: { live?: boolean }) {
   // Brief feedback confirms local actions that would otherwise be easy to miss.
   const [notice, setNotice] = useState("");
   const searchRef = useRef<HTMLInputElement>(null);
+  // First-time demo visitors get a tour; completion is independent of sample-data resets.
+  const [tourStep, setTourStep] = useState<number | null>(() => {
+    if (live) return null;
+    try {
+      return localStorage.getItem("central-command-tour-v1") === "seen"
+        ? null
+        : 0;
+    } catch {
+      return 0;
+    }
+  });
+  const closeTour = useCallback(() => {
+    setTourStep(null);
+    try {
+      localStorage.setItem("central-command-tour-v1", "seen");
+    } catch {
+      /* Tour still closes if browser storage is unavailable. */
+    }
+    window.setTimeout(
+      () => document.getElementById("cc-start-tour")?.focus(),
+      0,
+    );
+  }, []);
+  const changeTourStep = (step: number) => {
+    setTourStep(step);
+    const screens: Screen[] = [
+      "overview",
+      "overview",
+      "inbox",
+      "activity",
+      "connections",
+    ];
+    setScreen(screens[step]);
+  };
 
   useEffect(() => {
     document.body.classList.add("cc-body");
@@ -151,7 +186,7 @@ export function CentralCommand({ live = false }: { live?: boolean }) {
   }, []);
 
   useEffect(() => {
-    if (!selectedId && !draftOpen && !paletteOpen) return;
+    if (!selectedId && !draftOpen && !paletteOpen && tourStep === null) return;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     const trapFocus = (event: KeyboardEvent) => {
@@ -188,10 +223,19 @@ export function CentralCommand({ live = false }: { live?: boolean }) {
       document.body.style.overflow = previousOverflow;
       document.removeEventListener("keydown", trapFocus);
     };
-  }, [selectedId, draftOpen, paletteOpen]);
+  }, [selectedId, draftOpen, paletteOpen, tourStep]);
 
   useEffect(() => {
     const keydown = (event: KeyboardEvent) => {
+      if (tourStep !== null) {
+        if (event.key === "Escape") {
+          event.preventDefault();
+          closeTour();
+        }
+        if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k")
+          event.preventDefault();
+        return;
+      }
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
         event.preventDefault();
         setSelectedId(null);
@@ -215,7 +259,7 @@ export function CentralCommand({ live = false }: { live?: boolean }) {
     };
     window.addEventListener("keydown", keydown);
     return () => window.removeEventListener("keydown", keydown);
-  }, []);
+  }, [tourStep, closeTour]);
   useEffect(() => {
     if (!notice) return;
     const timeout = setTimeout(() => setNotice(""), 3500);
@@ -396,7 +440,11 @@ export function CentralCommand({ live = false }: { live?: boolean }) {
 
   return (
     <div className="cc-app" data-theme="dark">
-      <aside className="cc-rail" aria-label="Primary navigation">
+      <aside
+        className="cc-rail"
+        aria-label="Primary navigation"
+        aria-hidden={tourStep !== null || undefined}
+      >
         <button
           className="cc-brand-symbol"
           onClick={() => setScreen("overview")}
@@ -444,11 +492,11 @@ export function CentralCommand({ live = false }: { live?: boolean }) {
             <Settings2 size={18} />
           </button>
           <span className="cc-avatar" title="Personal workspace">
-            TA
+            CC
           </span>
         </div>
       </aside>
-      <div className="cc-shell">
+      <div className="cc-shell" aria-hidden={tourStep !== null || undefined}>
         <header className="cc-topbar">
           <div className="cc-wordmark">
             Central Command
@@ -469,7 +517,7 @@ export function CentralCommand({ live = false }: { live?: boolean }) {
             </button>
             <span className="cc-mode">
               <span />
-              {live ? "Local connection" : "Sample workspace"}
+              {live ? "Live · this machine" : "Demo mode"}
             </span>
           </div>
         </header>
@@ -507,7 +555,7 @@ export function CentralCommand({ live = false }: { live?: boolean }) {
               </a>
               <button className="cc-button cc-primary" onClick={newSession}>
                 <Plus size={15} />
-                New session
+                {live ? "New session" : "New sample session"}
               </button>
             </div>
           </div>
@@ -521,19 +569,32 @@ export function CentralCommand({ live = false }: { live?: boolean }) {
             <div className="cc-demo-notice">
               <span>
                 <Circle size={9} />
-                Interactive demo{" "}
+                <strong>Demo mode</strong>{" "}
                 <span className="cc-demo-explanation">
-                  · Sample agents and events. Actions stay in this browser.
+                  Sample data only. No real agents are running here.
                 </span>
               </span>
-              <button
-                onClick={() => {
-                  demo.reset();
-                  setNotice("Sample workspace reset");
-                }}
-              >
-                Reset demo <RotateCcw size={12} />
-              </button>
+              <div className="cc-demo-actions">
+                <button
+                  id="cc-start-tour"
+                  onClick={() => {
+                    setSelectedId(null);
+                    setDraftOpen(false);
+                    setPaletteOpen(false);
+                    changeTourStep(0);
+                  }}
+                >
+                  Take the tour <ArrowRight size={12} />
+                </button>
+                <button
+                  onClick={() => {
+                    demo.reset();
+                    setNotice("Sample workspace reset");
+                  }}
+                >
+                  Reset demo <RotateCcw size={12} />
+                </button>
+              </div>
             </div>
           )}
 
@@ -934,7 +995,7 @@ export function CentralCommand({ live = false }: { live?: boolean }) {
               <section className="cc-panel">
                 <div className="cc-section-heading">
                   <h2>Machines & cmux</h2>
-                  <span className="cc-muted">POC boundary</span>
+                  <span className="cc-muted">Preview scope</span>
                 </div>
                 <div className="cc-machine">
                   <Monitor size={25} />
@@ -955,7 +1016,7 @@ export function CentralCommand({ live = false }: { live?: boolean }) {
                 </p>
                 <a
                   className="cc-doc-link"
-                  href="https://github.com/TommyAllsup/central-command-gui/blob/main/docs/PLAN.md"
+                  href="https://github.com/TommyAllsup/central-command-gui/blob/main/docs/ROADMAP.md"
                   target="_blank"
                   rel="noreferrer"
                 >
@@ -966,7 +1027,7 @@ export function CentralCommand({ live = false }: { live?: boolean }) {
           )}
           <footer className="cc-footer">
             <span>
-              Central Command <span>·</span> Modified fork · POC 01
+              Central Command <span>·</span> Modified fork · Developer preview
             </span>
             <div>
               <a
@@ -1180,6 +1241,9 @@ export function CentralCommand({ live = false }: { live?: boolean }) {
           <Check size={15} />
           {notice}
         </div>
+      )}
+      {tourStep !== null && !live && (
+        <DemoTour step={tourStep} onStep={changeTourStep} onClose={closeTour} />
       )}
     </div>
   );

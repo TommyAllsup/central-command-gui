@@ -20,6 +20,7 @@ vi.mock("@/modules/central-command/hooks/useLiveCommand", () => ({
 
 beforeEach(() => {
   localStorage.clear();
+  localStorage.setItem("central-command-tour-v1", "seen");
   document.body.style.overflow = "";
   liveState.error = null;
   liveState.loading = false;
@@ -50,6 +51,115 @@ beforeEach(() => {
   ];
 });
 
+test("first demo visit shows the tutorial; skipping persists and replay is available", () => {
+  localStorage.removeItem("central-command-tour-v1");
+  const first = render(<CentralCommand />);
+  expect(
+    screen.getByRole("dialog", { name: "Welcome to the demo" }),
+  ).toBeTruthy();
+  expect(screen.getByText(/Every agent, machine, and event/)).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: "Skip tutorial" }));
+  expect(localStorage.getItem("central-command-tour-v1")).toBe("seen");
+  expect(screen.queryByRole("dialog")).toBeNull();
+  first.unmount();
+  render(<CentralCommand />);
+  expect(screen.queryByRole("dialog")).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "Take the tour" }));
+  expect(
+    screen.getByRole("dialog", { name: "Welcome to the demo" }),
+  ).toBeTruthy();
+});
+
+test("walkthrough moves between feature views, supports back, and finishes without changing sample work", () => {
+  localStorage.removeItem("central-command-tour-v1");
+  render(<CentralCommand />);
+  expect(
+    screen.getByRole("button", { name: "Back" }).hasAttribute("disabled"),
+  ).toBe(true);
+  fireEvent.click(screen.getByRole("button", { name: "Next" }));
+  expect(
+    screen.getByRole("dialog", { name: "Find the session that matters" }),
+  ).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: "Back" }));
+  expect(
+    screen.getByRole("dialog", { name: "Welcome to the demo" }),
+  ).toBeTruthy();
+  for (const title of [
+    "Find the session that matters",
+    "Give decisions your attention",
+    "Turn the stream down",
+    "Connect your own work",
+  ]) {
+    fireEvent.click(screen.getByRole("button", { name: "Next" }));
+    expect(screen.getByRole("dialog", { name: title })).toBeTruthy();
+  }
+  expect(
+    screen
+      .getByRole("link", { name: "Connect local sessions" })
+      .getAttribute("href"),
+  ).toBe("/command");
+  fireEvent.click(screen.getByRole("button", { name: "Finish tour" }));
+  expect(screen.queryByRole("dialog")).toBeNull();
+  expect(
+    screen.getByRole("heading", { name: "Connections" }),
+  ).toBeTruthy();
+  fireEvent.click(
+    screen.getByRole("button", { name: "Decision inbox" }),
+  );
+  expect(screen.getByText("2 waiting")).toBeTruthy();
+  expect(localStorage.getItem("central-command-demo-v1")).toBeNull();
+});
+
+test("tutorial traps focus, blocks command shortcuts, and Escape dismisses it", () => {
+  localStorage.removeItem("central-command-tour-v1");
+  render(<CentralCommand />);
+  const next = screen.getByRole("button", { name: "Next" });
+  const skip = screen.getByRole("button", { name: "Skip tutorial" });
+  next.focus();
+  fireEvent.keyDown(document, { key: "Tab" });
+  expect(document.activeElement).toBe(skip);
+  fireEvent.keyDown(document, { key: "Tab", shiftKey: true });
+  expect(document.activeElement).toBe(next);
+  fireEvent.keyDown(window, { key: "k", ctrlKey: true });
+  expect(screen.getAllByRole("dialog")).toHaveLength(1);
+  fireEvent.keyDown(window, { key: "Escape" });
+  expect(screen.queryByRole("dialog")).toBeNull();
+  expect(document.body.style.overflow).toBe("");
+});
+
+test("live mode never opens the demo tour for a first-time visitor", () => {
+  localStorage.removeItem("central-command-tour-v1");
+  render(<CentralCommand live />);
+  expect(screen.queryByRole("dialog")).toBeNull();
+  expect(screen.queryByRole("button", { name: "Take the tour" })).toBeNull();
+  expect(screen.getByText("Live · this machine")).toBeTruthy();
+  expect(
+    screen.getByRole("button", { name: "New session" }),
+  ).toBeTruthy();
+});
+
+test("resetting sample data does not reset the dismissed tutorial", () => {
+  render(<CentralCommand />);
+  fireEvent.click(screen.getByRole("button", { name: "Reset demo" }));
+  expect(localStorage.getItem("central-command-tour-v1")).toBe("seen");
+  expect(screen.queryByRole("dialog")).toBeNull();
+});
+
+test("the tour remains dismissible when browser storage is unavailable", () => {
+  vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
+    throw new Error("Unavailable");
+  });
+  vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+    throw new Error("Unavailable");
+  });
+  render(<CentralCommand />);
+  expect(
+    screen.getByRole("dialog", { name: "Welcome to the demo" }),
+  ).toBeTruthy();
+  fireEvent.click(screen.getByRole("button", { name: "Skip tutorial" }));
+  expect(screen.queryByRole("dialog")).toBeNull();
+});
+
 test("resolving a sample decision updates the inbox and stays resolved after reload", () => {
   const first = render(<CentralCommand />);
   fireEvent.click(screen.getByRole("button", { name: "Keep current rule" }));
@@ -71,7 +181,7 @@ test("resolving a sample decision updates the inbox and stays resolved after rel
 
 test("new sample session form creates an inspectable draft without launching it", () => {
   render(<CentralCommand />);
-  fireEvent.click(screen.getByRole("button", { name: "New session" }));
+  fireEvent.click(screen.getByRole("button", { name: "New sample session" }));
   const dialog = screen.getByRole("dialog", {
     name: "Give the next agent a mission.",
   });
@@ -259,7 +369,7 @@ test("marking all signals read clears Unread without deleting history and persis
 test("a draft dialog wraps Tab and Shift+Tab and restores page scrolling when dismissed", () => {
   document.body.style.overflow = "auto";
   render(<CentralCommand />);
-  fireEvent.click(screen.getByRole("button", { name: "New session" }));
+  fireEvent.click(screen.getByRole("button", { name: "New sample session" }));
   const dialog = screen.getByRole("dialog", {
     name: "Give the next agent a mission.",
   });
@@ -299,7 +409,7 @@ test("live session details trap focus between their close control and real-sessi
 
 test("Ctrl+K from a draft replaces it with one focus-trapped command palette", () => {
   render(<CentralCommand />);
-  fireEvent.click(screen.getByRole("button", { name: "New session" }));
+  fireEvent.click(screen.getByRole("button", { name: "New sample session" }));
   expect(
     screen.getByRole("dialog", { name: "Give the next agent a mission." }),
   ).toBeTruthy();

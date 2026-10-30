@@ -89,3 +89,14 @@ Live permission handling, interruption, reconnection, a second machine, and pack
 
 Final incremental checks after the full suite: 12/12 Central Command component tests passed, including signal filters, unread persistence, modal focus wrapping, and Ctrl+K replacing an open draft. Frontend TypeScript and the production client build passed again after those two interaction corrections. Default-view screenshots remain representative because those corrections affect only dialog/empty states.
 The final full frontend rerun after formatting and the dialog/empty-state fixes passed all 904 tests in 123 files. TypeScript and scoped Central Command lint also passed.
+
+## Developer-preview onboarding checks
+
+- Full frontend suite: **910 tests passed in 123 files**.
+- Final focused suite: **32 tests passed**, including six new walkthrough scenarios covering first visit, persistence/replay, all five steps, keyboard/focus behavior, live exclusion, reset independence, and unavailable storage.
+- Client and server TypeScript: passed. The first pass found an unsupported test-query option; it was removed and both typechecks passed on rerun.
+- Production client build: passed; inherited CSS/chunk-size warnings remain.
+- Repository lint: exit 0 with existing warnings outside Central Command; no Central Command diagnostics.
+- Real Edge browser: first-visit tour, five-step navigation, finish, reload without automatic tour, and replay verified. Production captures reviewed at desktop, tablet, and phone widths; see [design review](DESIGN.md#developer-preview-onboarding-review) for the inspector's intentional-modal exception.
+
+No Mac runtime or real provider turn was exercised by this onboarding change. Those checks and dependency review remain on the [release acceptance checklist](RELEASE.md).
